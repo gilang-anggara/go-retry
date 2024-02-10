@@ -51,7 +51,7 @@ func Test_WithRetry_MaxRetries(t *testing.T) {
 		retry.RetryConfig{
 			MaxRetry:              10,
 			MinBackoffDelayMillis: 100,
-			MaxBackoffDelayMillis: 1100,
+			MaxBackoffDelayMillis: 1000,
 			RetryableErrors:       []error{errRetryable},
 		},
 		toBeCalled,
@@ -60,5 +60,5 @@ func Test_WithRetry_MaxRetries(t *testing.T) {
 
 	assert.ErrorIs(t, err, errRetryable)
 	assert.Equal(t, callCount, 11)
-	assert.True(t, duration > time.Duration(6500)*time.Millisecond)
+	assert.True(t, duration > time.Duration(5000)*time.Millisecond)
 }

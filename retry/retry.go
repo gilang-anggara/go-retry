@@ -14,22 +14,29 @@ type RetryConfig struct {
 
 // WithRetry will execute with following conditions:
 // target function executes RetryConfig.MaxRetry + 1 times,
-// backoff will be linearly calculated from RetryConfig.MinBackoffDelayMillis until MaxBackoffDelayMillis,
-// MaxBackoffDelayMillis will be overwritten as max(MinBackoffDelayMillis, MaxBackoffDelayMillis),
+// backoff is linear, calculated from RetryConfig.MinBackoffDelayMillis until MaxBackoffDelayMillis,
+// MaxBackoffDelayMillis will be overwritten as max(MinBackoffDelayMillis, MaxBackoffDelayMillis)
 // empty retryables means target function executes only 1 times.
 func WithRetry(config RetryConfig, f func() error) error {
 	var err error
 
-	backOff, backOffIncrement := calculateBackoff(config.MinBackoffDelayMillis, config.MaxBackoffDelayMillis, config.MaxRetry)
+	backoff, backoffIncrement := calculateBackoff(config.MinBackoffDelayMillis, config.MaxBackoffDelayMillis, config.MaxRetry)
 
-	for range config.MaxRetry + 1 {
+	i := 0
+	for {
 		err = f()
+
 		if err == nil || !isRetryable(err, config.RetryableErrors) {
 			break
 		}
 
-		<-time.After(time.Duration(backOff) * time.Millisecond)
-		backOff += backOffIncrement
+		if i >= config.MaxRetry {
+			break
+		}
+
+		<-time.After(time.Duration(backoff) * time.Millisecond)
+		backoff += backoffIncrement
+		i += 1
 	}
 
 	return err
