@@ -19,14 +19,14 @@ var (
 )
 
 func main() {
-	config := retry.RetryConfig{
-		MaxRetry:              1,
+	retryer := retry.New(retry.RetryConfig{
+		MaxRetry:              5,
 		MinBackoffDelayMillis: 1000,
-		MaxBackoffDelayMillis: 30000,
+		MaxBackoffDelayMillis: 5000,
 		RetryableErrors:       []error{ErrRetryable},
-	}
+	})
 
-	err := retry.WithRetry(config, sampleFunction1)
+	err := retryer.WithRetry(sampleFunction1)
 
 	if err != nil {
 		panic(err)
@@ -34,7 +34,7 @@ func main() {
 }
 
 func sampleFunction1() error {
-	// sample
+	return ErrRetryable
 }
 ```
 
@@ -44,6 +44,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gilang-anggara/go-retry/retry"
 )
@@ -54,12 +55,12 @@ var (
 )
 
 func main() {
-	config := retry.RetryConfig{
-		MaxRetry:              1,
+	retryer := retry.New(retry.RetryConfig{
+		MaxRetry:              5,
 		MinBackoffDelayMillis: 1000,
-		MaxBackoffDelayMillis: 30000,
+		MaxBackoffDelayMillis: 5000,
 		RetryableErrors:       []error{ErrRetryable},
-	}
+	})
 
 	// wrap function to simple error & get result
 	var result int // careful not to share this variable
@@ -71,10 +72,12 @@ func main() {
 		return err
 	}
 
-	err = retry.WithRetry(config, exec1)
+	err = retryer.WithRetry(exec1)
+
+	fmt.Println(result, err)
 }
 
 func sampleFunction2(n int) (int, error) {
-	// sample
+	return 1, ErrRetryable
 }
 ```

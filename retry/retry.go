@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+type Retryer interface {
+	// WithRetry will execute with following conditions:
+	// target function executes RetryConfig.MaxRetry + 1 times,
+	// backoff is linear, calculated from RetryConfig.MinBackoffDelayMillis until MaxBackoffDelayMillis,
+	// MaxBackoffDelayMillis will be overwritten as max(MinBackoffDelayMillis, MaxBackoffDelayMillis)
+	// empty retryables means target function executes only 1 times.
+	WithRetry(f func() error) error
+}
+
 type RetryConfig struct {
 	MaxRetry              int
 	MinBackoffDelayMillis int
@@ -12,25 +21,30 @@ type RetryConfig struct {
 	RetryableErrors       []error
 }
 
-// WithRetry will execute with following conditions:
-// target function executes RetryConfig.MaxRetry + 1 times,
-// backoff is linear, calculated from RetryConfig.MinBackoffDelayMillis until MaxBackoffDelayMillis,
-// MaxBackoffDelayMillis will be overwritten as max(MinBackoffDelayMillis, MaxBackoffDelayMillis)
-// empty retryables means target function executes only 1 times.
-func WithRetry(config RetryConfig, f func() error) error {
+type retryer struct {
+	config RetryConfig
+}
+
+func New(config RetryConfig) Retryer {
+	return &retryer{
+		config: config,
+	}
+}
+
+func (r *retryer) WithRetry(f func() error) error {
 	var err error
 
-	backoff, backoffIncrement := calculateBackoff(config.MinBackoffDelayMillis, config.MaxBackoffDelayMillis, config.MaxRetry)
+	backoff, backoffIncrement := calculateBackoff(r.config.MinBackoffDelayMillis, r.config.MaxBackoffDelayMillis, r.config.MaxRetry)
 
 	i := 0
 	for {
 		err = f()
 
-		if err == nil || !isRetryable(err, config.RetryableErrors) {
+		if err == nil || !isRetryable(err, r.config.RetryableErrors) {
 			break
 		}
 
-		if i >= config.MaxRetry {
+		if i >= r.config.MaxRetry {
 			break
 		}
 

@@ -13,6 +13,12 @@ func Test_WithRetry_Success(t *testing.T) {
 	errRetryable := errors.New("retryable")
 	errNotRetryable := errors.New("not retryable")
 
+	retryer := retry.New(retry.RetryConfig{
+		MaxRetry:              0,
+		MinBackoffDelayMillis: 1000,
+		RetryableErrors:       []error{errRetryable},
+	})
+
 	callCount := 0
 	toBeCalled := func() error {
 		callCount += 1
@@ -21,14 +27,7 @@ func Test_WithRetry_Success(t *testing.T) {
 	}
 
 	start := time.Now()
-	err := retry.WithRetry(
-		retry.RetryConfig{
-			MaxRetry:              0,
-			MinBackoffDelayMillis: 1000,
-			RetryableErrors:       []error{errRetryable},
-		},
-		toBeCalled,
-	)
+	err := retryer.WithRetry(toBeCalled)
 	duration := time.Since(start)
 
 	assert.ErrorIs(t, err, errNotRetryable)
@@ -39,6 +38,13 @@ func Test_WithRetry_Success(t *testing.T) {
 func Test_WithRetry_MaxRetries(t *testing.T) {
 	errRetryable := errors.New("retryable")
 
+	retryer := retry.New(retry.RetryConfig{
+		MaxRetry:              10,
+		MinBackoffDelayMillis: 100,
+		MaxBackoffDelayMillis: 1000,
+		RetryableErrors:       []error{errRetryable},
+	})
+
 	callCount := 0
 	toBeCalled := func() error {
 		callCount += 1
@@ -47,15 +53,7 @@ func Test_WithRetry_MaxRetries(t *testing.T) {
 	}
 
 	start := time.Now()
-	err := retry.WithRetry(
-		retry.RetryConfig{
-			MaxRetry:              10,
-			MinBackoffDelayMillis: 100,
-			MaxBackoffDelayMillis: 1000,
-			RetryableErrors:       []error{errRetryable},
-		},
-		toBeCalled,
-	)
+	err := retryer.WithRetry(toBeCalled)
 	duration := time.Since(start)
 
 	assert.ErrorIs(t, err, errRetryable)
