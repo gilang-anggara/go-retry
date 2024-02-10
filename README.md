@@ -61,9 +61,9 @@ func main() {
 		RetryableErrors:       []error{ErrRetryable},
 	}
 
-    // wrap function to simple error & get result
-    var result int // careful not to share this variable
-    var err error
+	// wrap function to simple error & get result
+	var result int // careful not to share this variable
+	var err error
 
 	exec1 := func() error {
 		result, err = sampleFunction2(10)
@@ -71,7 +71,7 @@ func main() {
 		return err
 	}
 
-    err = retry.WithRetry(config, exec1)
+	err = retry.WithRetry(config, exec1)
 }
 
 func sampleFunction2(n int) (int, error) {
